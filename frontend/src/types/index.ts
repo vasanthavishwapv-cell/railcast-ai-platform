@@ -139,3 +139,96 @@ export interface ModelMetricItem {
   inference_latency_ms: number;
   status: string;
 }
+
+export interface RailRadarStatus {
+  status: "CONNECTED" | "UNAUTHORIZED" | "OFFLINE" | string;
+  base_url: string;
+  has_api_key: boolean;
+  valid_key: boolean;
+  latency_ms: number;
+  message: string;
+  upstream_available: boolean;
+}
+
+export interface RailRadarTelemetry {
+  latitude: number;
+  longitude: number;
+  speed_kmh: number;
+  bearing: number;
+  segment_progress_percent: number;
+  delay_minutes: number;
+}
+
+export interface RailRadarNextStation {
+  code: string;
+  name: string;
+  distance_km: number;
+  scheduled_arrival: string;
+  expected_arrival: string;
+  platform: string;
+}
+
+export interface RailRadarAIIntelligence {
+  natural_recovery_minutes: number;
+  projected_net_delay_minutes: number;
+  confidence_score: number;
+  bounds: {
+    p10_optimistic_min: number;
+    p50_expected_min: number;
+    p90_conservative_min: number;
+  };
+  anomaly: {
+    is_anomaly: boolean;
+    anomaly_type: string;
+    severity: string;
+  };
+}
+
+export interface RailRadarStop {
+  code: string;
+  name: string;
+  scheduled_arrival: string;
+  actual_arrival: string;
+  delay_minutes: number;
+  platform: string;
+  has_departed: boolean;
+  coordinates?: [number, number];
+}
+
+export interface RailRadarLiveTrain {
+  success: boolean;
+  train_number: string;
+  train_name: string;
+  data_source: string;
+  is_live_upstream: boolean;
+  note?: string;
+  last_updated: string;
+  status: string;
+  telemetry: RailRadarTelemetry;
+  next_station: RailRadarNextStation;
+  ai_intelligence: RailRadarAIIntelligence;
+  stops: RailRadarStop[];
+}
+
+export interface RailRadarArrivalDeparture {
+  train_number: string;
+  name: string;
+  origin?: string;
+  destination?: string;
+  scheduled_time: string;
+  expected_time: string;
+  delay: number;
+  platform: string;
+  status: string;
+}
+
+export interface RailRadarStationLive {
+  success: boolean;
+  station_code: string;
+  station_name: string;
+  is_live_upstream: boolean;
+  note?: string;
+  arrivals: RailRadarArrivalDeparture[];
+  departures: RailRadarArrivalDeparture[];
+}
+

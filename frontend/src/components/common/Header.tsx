@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Train, Navigation, SlidersHorizontal, BarChart3, Settings, Wifi, RefreshCw } from 'lucide-react';
+import { Activity, Train, Navigation, SlidersHorizontal, BarChart3, Settings, Wifi, RefreshCw, Radio } from 'lucide-react';
 import { wsClient, ConnectionStatus } from '../../api/websocket';
 import { getApiBaseUrl, setCustomApiUrl } from '../../api/client';
+import { RailRadarStatus } from '../../types';
+
+export type MainTabType = 'passenger' | 'controller' | 'simulation' | 'metrics' | 'railradar';
 
 interface HeaderProps {
-  activeTab: 'passenger' | 'controller' | 'simulation' | 'metrics';
-  setActiveTab: (tab: 'passenger' | 'controller' | 'simulation' | 'metrics') => void;
+  activeTab: MainTabType;
+  setActiveTab: (tab: MainTabType) => void;
   activeAlertsCount: number;
+  onOpenRailRadarModal?: () => void;
+  railRadarStatus?: RailRadarStatus | null;
 }
 
-export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, activeAlertsCount }) => {
+export const Header: React.FC<HeaderProps> = ({
+  activeTab,
+  setActiveTab,
+  activeAlertsCount,
+  onOpenRailRadarModal,
+  railRadarStatus
+}) => {
   const [time, setTime] = useState<string>('');
   const [connStatus, setConnStatus] = useState<ConnectionStatus>('WS_CONNECTED');
   const [showConfig, setShowConfig] = useState(false);
@@ -64,10 +75,10 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, activeA
         </div>
 
         {/* Center: Navigation Tabs */}
-        <nav className="flex items-center bg-[#121214] p-1 rounded-xl border border-[#2C2C2E]">
+        <nav className="flex items-center bg-[#121214] p-1 rounded-xl border border-[#2C2C2E] overflow-x-auto max-w-full">
           <button
             onClick={() => setActiveTab('passenger')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
               activeTab === 'passenger'
                 ? 'bg-[#007AFF] text-white shadow-md shadow-[#007AFF]/30'
                 : 'text-[#AAAAAA] hover:text-[#F5F5F7] hover:bg-[#1D1D1F]'
@@ -78,8 +89,23 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, activeA
           </button>
 
           <button
+            onClick={() => setActiveTab('railradar')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap relative ${
+              activeTab === 'railradar'
+                ? 'bg-gradient-to-r from-[#007AFF] to-[#5856D6] text-white shadow-md shadow-[#007AFF]/30'
+                : 'text-[#AAAAAA] hover:text-[#F5F5F7] hover:bg-[#1D1D1F]'
+            }`}
+          >
+            <Radio className="w-3.5 h-3.5 text-[#30D158] animate-pulse" />
+            RailRadar Live
+            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#30D158]/20 text-[#30D158] font-mono font-bold">
+              LIVE
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('controller')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 relative ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap relative ${
               activeTab === 'controller'
                 ? 'bg-[#007AFF] text-white shadow-md shadow-[#007AFF]/30'
                 : 'text-[#AAAAAA] hover:text-[#F5F5F7] hover:bg-[#1D1D1F]'
@@ -94,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, activeA
 
           <button
             onClick={() => setActiveTab('simulation')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
               activeTab === 'simulation'
                 ? 'bg-[#007AFF] text-white shadow-md shadow-[#007AFF]/30'
                 : 'text-[#AAAAAA] hover:text-[#F5F5F7] hover:bg-[#1D1D1F]'
@@ -106,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, activeA
 
           <button
             onClick={() => setActiveTab('metrics')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
               activeTab === 'metrics'
                 ? 'bg-[#007AFF] text-white shadow-md shadow-[#007AFF]/30'
                 : 'text-[#AAAAAA] hover:text-[#F5F5F7] hover:bg-[#1D1D1F]'
@@ -118,29 +144,45 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, activeA
         </nav>
 
         {/* Right: Live Telemetry Status & Endpoint Config */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {/* RailRadar Status Pill Button */}
+          {onOpenRailRadarModal && (
+            <button
+              onClick={onOpenRailRadarModal}
+              title="RailRadar API Connection & Settings"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-mono font-semibold transition hover:scale-105 ${
+                railRadarStatus?.status === 'CONNECTED'
+                  ? 'bg-[#30D158]/10 border-[#30D158]/40 text-[#30D158]'
+                  : 'bg-[#FF9F0A]/10 border-[#FF9F0A]/40 text-[#FF9F0A]'
+              }`}
+            >
+              <Radio className="w-3 h-3 animate-pulse" />
+              <span>{railRadarStatus?.status === 'CONNECTED' ? 'RailRadar API' : 'RailRadar (Key)'}</span>
+            </button>
+          )}
+
           {connStatus === 'WS_CONNECTED' ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#30D158]/10 border border-[#30D158]/30">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#30D158]/10 border border-[#30D158]/30">
               <span className="w-2 h-2 rounded-full bg-[#30D158] animate-pulse" />
               <span className="text-[11px] font-medium text-[#30D158] flex items-center gap-1">
                 <Wifi className="w-3 h-3" /> LIVE WS
               </span>
             </div>
           ) : connStatus === 'HTTP_POLLING' ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#007AFF]/10 border border-[#007AFF]/30">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#007AFF]/10 border border-[#007AFF]/30">
               <span className="w-2 h-2 rounded-full bg-[#007AFF] animate-pulse" />
               <span className="text-[11px] font-medium text-[#007AFF] flex items-center gap-1">
-                <RefreshCw className="w-3 h-3 animate-spin" /> LIVE SYNC (3s)
+                <RefreshCw className="w-3 h-3 animate-spin" /> SYNC (3s)
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#FF9F0A]/10 border border-[#FF9F0A]/30">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FF9F0A]/10 border border-[#FF9F0A]/30">
               <span className="w-2 h-2 rounded-full bg-[#FF9F0A] animate-ping" />
               <span className="text-[11px] font-medium text-[#FF9F0A]">SYNCING</span>
             </div>
           )}
 
-          <div className="text-right font-mono hidden sm:block">
+          <div className="text-right font-mono hidden lg:block">
             <div className="text-xs font-bold text-[#F5F5F7] tracking-wider">{time} IST</div>
             <div className="text-[10px] text-[#AAAAAA]">
               {connStatus === 'WS_CONNECTED' ? 'SUB-50ms WS' : 'RESILIENT HTTP'}
@@ -157,6 +199,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, activeA
           </button>
         </div>
       </div>
+
 
       {/* Backend API Configuration Modal / Dropdown */}
       {showConfig && (

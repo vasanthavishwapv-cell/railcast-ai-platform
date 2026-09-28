@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from './components/common/Header';
+import { Header, MainTabType } from './components/common/Header';
 import { AlertToast } from './components/common/AlertToast';
 import { PassengerView } from './components/passenger/PassengerView';
 import { ControllerView } from './components/controller/ControllerView';
 import { WhatIfSandbox } from './components/simulation/WhatIfSandbox';
 import { ModelMetricsView } from './components/metrics/ModelMetricsView';
-import { TrainSummary, NetworkStatus, RouteSectionRisk, AlertItem } from './types';
+import { RailRadarHubView } from './components/railradar/RailRadarHubView';
+import { RailRadarConfigModal } from './components/railradar/RailRadarConfigModal';
+import { TrainSummary, NetworkStatus, RouteSectionRisk, AlertItem, RailRadarStatus } from './types';
 import { api } from './api/client';
 import { wsClient } from './api/websocket';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'passenger' | 'controller' | 'simulation' | 'metrics'>('passenger');
+  const [activeTab, setActiveTab] = useState<MainTabType>('passenger');
   const [trains, setTrains] = useState<TrainSummary[]>([]);
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus | null>(null);
   const [riskSections, setRiskSections] = useState<RouteSectionRisk[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [selectedTrainNumber, setSelectedTrainNumber] = useState<string>('12628');
+  const [railRadarStatus, setRailRadarStatus] = useState<RailRadarStatus | null>(null);
+  const [showRailRadarModal, setShowRailRadarModal] = useState(false);
+
 
   useEffect(() => {
     loadInitialData();
@@ -72,16 +77,18 @@ export const App: React.FC = () => {
 
   const loadInitialData = async () => {
     try {
-      const [trainsData, netData, riskData, alertsData] = await Promise.all([
+      const [trainsData, netData, riskData, alertsData, radarStatus] = await Promise.all([
         api.getTrains(),
         api.getNetworkStatus(),
         api.getRiskMap(),
-        api.getAlerts()
+        api.getAlerts(),
+        api.getRailRadarStatus()
       ]);
       setTrains(trainsData);
       setNetworkStatus(netData);
       setRiskSections(riskData.sections || []);
       setAlerts(alertsData);
+      setRailRadarStatus(radarStatus);
       if (trainsData.length > 0 && !selectedTrainNumber) {
         setSelectedTrainNumber(trainsData[0].train_number);
       }
@@ -106,6 +113,8 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         activeAlertsCount={alerts.length}
+        onOpenRailRadarModal={() => setShowRailRadarModal(true)}
+        railRadarStatus={railRadarStatus}
       />
 
       {/* Main Content Container */}
@@ -115,6 +124,17 @@ export const App: React.FC = () => {
             trains={trains}
             selectedTrainNumber={selectedTrainNumber}
             onSelectTrain={setSelectedTrainNumber}
+          />
+        )}
+
+        {activeTab === 'railradar' && (
+          <RailRadarHubView
+            onOpenConfig={() => setShowRailRadarModal(true)}
+            railRadarStatus={railRadarStatus}
+            onSelectTrain={(num) => {
+              setSelectedTrainNumber(num);
+              setActiveTab('passenger');
+            }}
           />
         )}
 
@@ -143,8 +163,16 @@ export const App: React.FC = () => {
 
       {/* Floating Real-Time Anomaly Toast Notifications */}
       <AlertToast alerts={alerts} onResolve={handleResolveAlert} />
+
+      {/* RailRadar API Connection & Configuration Modal */}
+      <RailRadarConfigModal
+        isOpen={showRailRadarModal}
+        onClose={() => setShowRailRadarModal(false)}
+        onConfigUpdated={loadInitialData}
+      />
     </div>
   );
 };
 
 export default App;
+

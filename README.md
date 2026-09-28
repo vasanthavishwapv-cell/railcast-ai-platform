@@ -118,7 +118,7 @@ python -m pytest tests -v
 
 ---
 
-## 📡 API Endpoint Reference (11 Endpoints)
+## 📡 API Endpoint Reference
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -134,8 +134,14 @@ python -m pytest tests -v
 | `POST` | `/api/control/alerts/{alert_id}/resolve` | Dispatcher acknowledgment and resolution |
 | `POST` | `/api/simulation/run` | High-speed What-If scenario cascade simulator |
 | `GET` | `/api/metrics` | AI/ML model scorecard and benchmark audit trail |
+| `GET` | `/api/railradar/status` | Real-time ping latency and connectivity to https://api.railradar.in/v1 |
+| `POST` | `/api/railradar/config` | Dynamic update of RailRadar API Key and Base URL |
+| `GET` | `/api/railradar/train/{number}/live` | Live Indian Railways telemetry + AI ETA recovery & calibrated quantiles |
+| `GET` | `/api/railradar/station/{code}/live` | Real-time station arrival and departure board with platforms |
+| `POST` | `/api/railradar/sync` | Syncs live RailRadar train telemetry directly into platform database |
 | `WS` | `/ws/telemetry` | Sub-50ms live train GPS movement and telemetry stream |
 | `WS` | `/ws/alerts` | Push stream for instant anomaly alerts |
+
 
 ---
 

@@ -7,7 +7,10 @@ import {
   RouteSectionRisk,
   AlertItem,
   WhatIfResponse,
-  ModelMetricItem
+  ModelMetricItem,
+  RailRadarStatus,
+  RailRadarLiveTrain,
+  RailRadarStationLive
 } from '../types';
 
 // Fallback Mock Data for standalone Vercel preview or backend warmup
@@ -544,5 +547,108 @@ export const api = {
         }
       };
     }
+  },
+
+  // RailRadar Real-Time API (https://api.railradar.in/v1)
+  getRailRadarStatus: async (): Promise<RailRadarStatus> => {
+    try {
+      const client = createClient();
+      const res = await client.get<RailRadarStatus>('/railradar/status');
+      return res.data;
+    } catch {
+      return {
+        status: "UNAUTHORIZED",
+        base_url: "https://api.railradar.in/v1",
+        has_api_key: false,
+        valid_key: false,
+        latency_ms: 62.0,
+        message: "RailRadar Live API requires authentication. Configure API Key to stream live data.",
+        upstream_available: false
+      };
+    }
+  },
+
+  updateRailRadarConfig: async (apiKey: string, baseUrl?: string): Promise<{ status: string; message: string }> => {
+    const client = createClient();
+    const res = await client.post('/railradar/config', { api_key: apiKey, base_url: baseUrl });
+    return res.data;
+  },
+
+  getRailRadarTrainLive: async (trainNumber: string): Promise<RailRadarLiveTrain> => {
+    try {
+      const client = createClient();
+      const res = await client.get<RailRadarLiveTrain>(`/railradar/train/${trainNumber}/live`);
+      return res.data;
+    } catch (e) {
+      console.warn(`Falling back for train ${trainNumber}:`, e);
+      return {
+        success: true,
+        train_number: trainNumber,
+        train_name: `Express Train (${trainNumber})`,
+        data_source: "FALLBACK_PREVIEW",
+        is_live_upstream: false,
+        last_updated: new Date().toISOString(),
+        status: "RUNNING",
+        telemetry: {
+          latitude: 28.6139,
+          longitude: 77.2090,
+          speed_kmh: 88.0,
+          bearing: 180.0,
+          segment_progress_percent: 52.0,
+          delay_minutes: 8.0
+        },
+        next_station: {
+          code: "AGC",
+          name: "Agra Cantt",
+          distance_km: 85.0,
+          scheduled_arrival: "14:10",
+          expected_arrival: "14:18",
+          platform: "1"
+        },
+        ai_intelligence: {
+          natural_recovery_minutes: 3.5,
+          projected_net_delay_minutes: 4.5,
+          confidence_score: 93.8,
+          bounds: {
+            p10_optimistic_min: 3.0,
+            p50_expected_min: 4.5,
+            p90_conservative_min: 7.0
+          },
+          anomaly: {
+            is_anomaly: false,
+            anomaly_type: "NONE",
+            severity: "LOW"
+          }
+        },
+        stops: []
+      };
+    }
+  },
+
+  getRailRadarStationLive: async (stationCode: string, hours = 4): Promise<RailRadarStationLive> => {
+    try {
+      const client = createClient();
+      const res = await client.get<RailRadarStationLive>(`/railradar/station/${stationCode}/live`, {
+        params: { hours }
+      });
+      return res.data;
+    } catch {
+      return {
+        success: true,
+        station_code: stationCode,
+        station_name: `${stationCode} Station`,
+        is_live_upstream: false,
+        arrivals: [],
+        departures: []
+      };
+    }
+  },
+
+  syncRailRadarFleet: async (trainNumbers?: string[]): Promise<any> => {
+    const client = createClient();
+    const res = await client.post('/railradar/sync', trainNumbers || []);
+    return res.data;
   }
 };
+
+

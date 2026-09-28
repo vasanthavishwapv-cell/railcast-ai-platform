@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db.seed_data import init_db
 from app.services.live_simulator import live_simulator
-from app.api.v1 import trains, control, simulation, metrics, websocket
+from app.api.v1 import trains, control, simulation, metrics, websocket, railradar
 
 # Auto-initialize DB on module load for serverless environments
 try:
@@ -54,6 +54,7 @@ app.include_router(trains.router, prefix=settings.API_V1_STR, tags=["Trains"])
 app.include_router(control.router, prefix=settings.API_V1_STR, tags=["Control Room"])
 app.include_router(simulation.router, prefix=settings.API_V1_STR, tags=["Simulation"])
 app.include_router(metrics.router, prefix=settings.API_V1_STR, tags=["Metrics"])
+app.include_router(railradar.router, prefix=settings.API_V1_STR, tags=["RailRadar Real-Time API"])
 app.include_router(websocket.router, tags=["WebSockets"])
 
 @app.get("/", tags=["Health"])

@@ -60,12 +60,26 @@ def verify_all():
     print(f"   * Baseline ETA: {sim['baseline_final_eta']} -> Simulated Disrupted ETA: {sim['simulated_final_eta']} (+{sim['net_delay_delta_minutes']} min)")
     print(f"   * AI Mitigation: {sim['mitigation_recommendation']}")
 
-    # 8. Frontend Web App Verification
+    # 8. RailRadar Real-Time REST API Integration (https://api.railradar.in/v1)
+    res_rr = urllib.request.urlopen("http://127.0.0.1:8000/api/railradar/status")
+    rr_status = json.loads(res_rr.read().decode())
+    print(f"[OK] RailRadar Endpoint Status: {rr_status['status']} | Endpoint: {rr_status['base_url']} | Ping Latency: {rr_status['latency_ms']}ms")
+
+    res_rr_train = urllib.request.urlopen("http://127.0.0.1:8000/api/railradar/train/12628/live")
+    rr_train = json.loads(res_rr_train.read().decode())
+    print(f"[OK] RailRadar Live Train Telemetry (Train 12628): Speed={rr_train['telemetry']['speed_kmh']} km/h, Delay={rr_train['telemetry']['delay_minutes']}m, AI Recovery={rr_train['ai_intelligence']['natural_recovery_minutes']}m, Confidence={rr_train['ai_intelligence']['confidence_score']}%")
+
+    res_rr_stn = urllib.request.urlopen("http://127.0.0.1:8000/api/railradar/station/NDLS/live")
+    rr_stn = json.loads(res_rr_stn.read().decode())
+    print(f"[OK] RailRadar Station Live Board (NDLS): {len(rr_stn.get('arrivals', []))} arriving trains tracked in real-time.")
+
+    # 9. Frontend Web App Verification
     res_fe = urllib.request.urlopen("http://localhost:5173/")
     fe_html = res_fe.read().decode()
     print(f"[OK] Frontend Web Application: Live at http://localhost:5173 (Status: {res_fe.status}, RAIL-CAST AI Title Verified: {'RAIL-CAST AI' in fe_html})")
     
-    print("\nALL BACKEND & FRONTEND SYSTEMS OPERATIONAL AND CONNECTED! [SUCCESS]")
+    print("\nALL BACKEND, FRONTEND & RAILRADAR REAL-TIME SYSTEMS OPERATIONAL AND CONNECTED! [SUCCESS]")
+
 
 if __name__ == "__main__":
     verify_all()

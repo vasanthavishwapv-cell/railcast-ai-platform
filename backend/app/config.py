@@ -28,7 +28,14 @@ class Settings(BaseSettings):
     # CORS (allows all origins, including *.vercel.app)
     CORS_ORIGINS: list[str] = ["*"]
     
+    # RailRadar Real-Time API Integration (https://api.railradar.in/v1)
+    RAILRADAR_BASE_URL: str = os.getenv("RAILRADAR_BASE_URL", "https://api.railradar.in/v1")
+    RAILRADAR_API_KEY: str = os.getenv("RAILRADAR_API_KEY", "")
+    RAILRADAR_TIMEOUT_SECONDS: float = 8.0
+    RAILRADAR_FALLBACK_SIMULATION: bool = True
+    
     class Config:
         case_sensitive = True
 
 settings = Settings()
+
